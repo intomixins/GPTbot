@@ -11,6 +11,8 @@ idna==3.4
 magic-filter==1.0.11
 multidict==6.0.4
 openai==0.27.8
+python-dotenv==1.0.0
+python-env==1.0.0
 pytz==2023.3
 requests==2.31.0
 tqdm==4.65.0
