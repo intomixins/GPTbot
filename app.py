@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 import openai
 from keyboard_menu import kb_menu, sub_menu, role_menu
-from asyncio import run
+from aiogram.types.message import ContentType
 from DataBase import check_user
 from sub_chanel import check_sub_chanel
 
@@ -13,12 +13,14 @@ load_dotenv()
 token = os.getenv("BOT_TOKEN")
 bot = Bot(token=token)
 openai.api_key = os.getenv("API_KEY")
+PAYMENT_TOKEN = os.getenv("PAYMENT_TOKEN")
 dp = Dispatcher(bot)
+CHANNEL_ID = '@my_test_bot18'
 
 MODEL = 'gpt-3.5-turbo'
 ROLES = ['гопник', 'Владимир Жириновский']
 CUR_ROLE = ''
-CHANNEL_ID = '@my_test_bot18'
+PRICE = types.LabeledPrice(label='Подписка на 1 месяц', amount=1000 * 100)
 
 
 @dp.message_handler(commands=['start'])
@@ -49,6 +51,38 @@ async def menu(message: types.Message):
     await message.delete()
 
 
+@dp.message_handler(commands=['Купить'])
+async def buy(message: types.Message):
+    if PAYMENT_TOKEN.split(":")[1] == 'TEST':
+        await bot.send_message(message.chat.id, "Тестовый платеж", reply_markup=kb_menu)
+
+    await bot.send_invoice(message.chat.id,
+                           title='Подписка на бота',
+                           description='Активация на один месяц',
+                           provider_token=PAYMENT_TOKEN,
+                           currency='rub',
+                           photo_url='https://telegram.org/file/464001533/1130b/LOLHYtTvIyg.5632468/765938e39b6572ef3c',
+                           photo_width=416,
+                           photo_height=234,
+                           photo_size=416,
+                           is_flexible=False,
+                           prices=[PRICE],
+                           start_parameter='one-month-subscription',
+                           payload='test-invoice-payload')
+
+
+@dp.pre_checkout_query_handler(lambda query: True)
+async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+
+
+@dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
+async def successful_payment(message: types.Message):
+    await bot.send_message(message.chat.id,
+                           f"Платеж на сумму {message.successful_payment.total_amount // 100}"
+                           f" {message.successful_payment.currency} прошел успешно")
+
+
 @dp.message_handler()
 async def get_all_messages(message: types.Message):
     global CUR_ROLE
@@ -75,9 +109,10 @@ async def get_all_messages(message: types.Message):
             await bot.send_message(message.chat.id, answer)
             await message.delete()
         else:
-            await bot.send_message(message.chat.id, f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
+            await bot.send_message(message.chat.id,
+                                   f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
     else:
         await bot.send_message(message.chat.id, text="Вы исчерпали свой месячный лимит по данной подписке")
 
 
-executor.start_polling(dp)
+executor.start_polling(dp, skip_updates=False)

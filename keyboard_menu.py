@@ -13,7 +13,7 @@ kb_menu = ReplyKeyboardMarkup(
 sub_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='/Купить подписку'),
+            KeyboardButton(text='/Купить'),
             KeyboardButton(text='/Меню')
         ]
     ],
