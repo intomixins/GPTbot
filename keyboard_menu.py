@@ -3,8 +3,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 kb_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
-        KeyboardButton(text='Подписка'),
-        KeyboardButton(text='Роли'),
+            KeyboardButton(text='/Подписка'),
+            KeyboardButton(text='/Роли'),
         ]
     ],
     resize_keyboard=True
@@ -13,10 +13,11 @@ kb_menu = ReplyKeyboardMarkup(
 sub_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='купить подписку'),
-            KeyboardButton(text='отмена')
+            KeyboardButton(text='/Купить подписку'),
+            KeyboardButton(text='/Меню')
         ]
-    ]
+    ],
+    resize_keyboard=True
 )
 
 role_menu = ReplyKeyboardMarkup(
