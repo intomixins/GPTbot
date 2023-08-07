@@ -1,4 +1,5 @@
 import sqlite3
+from types import NoneType
 
 
 def new_message(user_id):
@@ -12,7 +13,7 @@ def new_message(user_id):
             else:
                 return 'limit'
         else:
-            if count < 10:
+            if count <= 10:
                 cur.execute(f"UPDATE users SET count = count + 1 WHERE user_id == {user_id}")
             else:
                 return 'limit'
@@ -25,26 +26,23 @@ def list_of_users():
         return list([i[0] for i in lst])
 
 
-def add_user(user_id, cr):
+def add_user(user_id):
+    if user_id not in list_of_users():
+        with sqlite3.connect('bot.db') as conn:
+            cur = conn.cursor()
+            cur.execute(f"INSERT INTO users VALUES({user_id}, 0, 0, 1, 0)")
+
+
+def check_user(user_id):
+    if not new_message(user_id):
+        return True
+    return False
+
+
+def add_pay_user(user_id):
     with sqlite3.connect('bot.db') as conn:
         cur = conn.cursor()
-        cur.execute(f"INSERT INTO users VALUES({user_id}, 0, 0, 1, '{get_id_by_name(cr)}')")
-
-
-def check_user(user_id, cr):
-    if user_id in list_of_users():
-        if not new_message(user_id):
-            return True
-        return False
-    add_user(user_id, cr)
-    return True
-
-
-def add_pay_user(user_id, cr):
-    with sqlite3.connect('bot.db') as conn:
-        cur = conn.cursor()
-        if user_id not in list_of_users():
-            cur.execute(f"INSERT INTO users VALUES({user_id}, 0, 1, 0, '{get_id_by_name(cr)}')")
+        cur.execute(f"UPDATE users SET count = 0, is_member = 1")
 
 
 def get_description(role_name):
@@ -66,4 +64,19 @@ def list_of_roles():
         cur = conn.cursor()
         lst = cur.execute(f"SELECT name FROM roles").fetchall()
         return list([i[0] for i in lst])
+
+
+def change_role(user_id, role):
+    with sqlite3.connect('bot.db') as conn:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE users SET role_id = {get_id_by_name(role)} WHERE user_id = {user_id}")
+
+
+def get_role(user_id):
+    with sqlite3.connect('bot.db') as conn:
+        cur = conn.cursor()
+        role_id = cur.execute(f"SELECT role_id FROM users WHERE user_id = {user_id}").fetchone()[0]
+        if role_id != 0:
+            return cur.execute(f"SELECT name FROM roles WHERE id = {role_id}").fetchone()[0]
+        return None
 

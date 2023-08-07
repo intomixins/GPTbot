@@ -5,7 +5,7 @@ from aiogram.utils import executor
 import openai
 from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe
 from aiogram.types.message import ContentType
-from DataBase import check_user, add_pay_user, get_description
+from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user
 from sub_chanel import check_sub_chanel
 
 load_dotenv()
@@ -26,6 +26,7 @@ PRICE = types.LabeledPrice(label='Подписка на 1 месяц', amount=10
 async def welcome(message: types.Message):
     name = message.chat.username
     uid = message.from_user.id
+    add_user(uid)
     response = f'Привет {name}, меня зовут MozgBot. Готов ответить на любой твой вопрос в одной из 4 ролей.' \
                f' Для начала выбери от чьего лица хочешь получить ответ.'
     await bot.send_message(message.chat.id, text=response, reply_markup=kb)
@@ -50,9 +51,8 @@ async def roles(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text=['Гопник', 'Жириновский', 'Гоблин Пучков', 'Илон Маск'])
 async def all_roles(call: types.CallbackQuery):
-    global CUR_ROLE
-    CUR_ROLE = call.data
-    await call.message.answer(text=f'Роль успешно изменена на {CUR_ROLE}. {get_description(CUR_ROLE)}')
+    change_role(call.from_user.id, call.data)
+    await call.message.answer(text=f'Роль успешно изменена на {call.data}. {get_description(call.data)}')
     await call.message.answer(text='Введите свой вопрос')
 
 
@@ -83,7 +83,7 @@ async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
 async def successful_payment(message: types.Message):
     user_id = message.from_user.id
-    add_pay_user(user_id, CUR_ROLE)
+    add_pay_user(user_id)
     await bot.send_message(message.chat.id,
                            f"Платеж на сумму {message.successful_payment.total_amount // 100}"
                            f" {message.successful_payment.currency} прошел успешно")
@@ -92,10 +92,10 @@ async def successful_payment(message: types.Message):
 @dp.message_handler()
 async def get_all_messages(message: types.Message):
     user_id = message.from_user.id
-    global CUR_ROLE
+    CUR_ROLE = get_role(user_id)
     if CUR_ROLE:
         if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
-            if check_user(user_id, CUR_ROLE):
+            if check_user(user_id):
                 response = openai.ChatCompletion.create(
                     model=MODEL,
                     temperature=0.5,
