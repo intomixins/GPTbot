@@ -1,5 +1,6 @@
 import sqlite3
 from types import NoneType
+from datetime import date
 
 
 def new_message(user_id):
@@ -30,7 +31,7 @@ def add_user(user_id):
     if user_id not in list_of_users():
         with sqlite3.connect('bot.db') as conn:
             cur = conn.cursor()
-            cur.execute(f"INSERT INTO users VALUES({user_id}, 0, 0, 1, 0)")
+            cur.execute(f"INSERT INTO users VALUES({user_id}, 0, 0, 1, 0, NULL)")
 
 
 def check_user(user_id):
@@ -42,7 +43,7 @@ def check_user(user_id):
 def add_pay_user(user_id):
     with sqlite3.connect('bot.db') as conn:
         cur = conn.cursor()
-        cur.execute(f"UPDATE users SET count = 0, is_member = 1")
+        cur.execute(f"UPDATE users SET count = 0, is_member = 1, date = '{date.today()}'")
 
 
 def get_description(role_name):
@@ -80,3 +81,12 @@ def get_role(user_id):
             return cur.execute(f"SELECT name FROM roles WHERE id = {role_id}").fetchone()[0]
         return None
 
+
+def check_month(user_id):
+    with sqlite3.connect('bot.db') as conn:
+        cur = conn.cursor()
+        year, month, day = cur.execute(f"SELECT date FROM users WHERE user_id = {user_id}").fetchone()[0].split('-')
+        if date.today().year == int(year) and date.today().month == int(f"{(int(month) + 1):02}") \
+                and date.today().day == int(day):
+            return False
+    return True

@@ -5,7 +5,7 @@ from aiogram.utils import executor
 import openai
 from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe
 from aiogram.types.message import ContentType
-from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user
+from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month
 from sub_chanel import check_sub_chanel
 
 load_dotenv()
@@ -93,31 +93,39 @@ async def successful_payment(message: types.Message):
 async def get_all_messages(message: types.Message):
     user_id = message.from_user.id
     CUR_ROLE = get_role(user_id)
-    if CUR_ROLE:
-        if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
-            if check_user(user_id):
-                response = openai.ChatCompletion.create(
-                    model=MODEL,
-                    temperature=0.5,
-                    messages=[
-                        {'role': 'system', 'content': f'Отвечай как будто ты {CUR_ROLE} и не выходи из этой роли'
-                                                      'К тебе обратился пользователь с таким сообщением.'
-                                                      ' В конце каждого'
-                                                      'сообщения ты подписываешься. Что ему ответить?'},
-                        {'role': 'user', 'content': message.text}
-                    ],
-                    max_tokens=500,
-                )
-                answer = response.choices[0].message.content
-                await bot.send_message(message.chat.id, answer, reply_markup=back)
-                await message.delete()
+    if check_month(user_id):
+        print('yes')
+        if CUR_ROLE:
+            if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
+                if check_user(user_id):
+                    response = openai.ChatCompletion.create(
+                        model=MODEL,
+                        temperature=0.5,
+                        messages=[
+                            {'role': 'system', 'content': f'Отвечай как будто ты {CUR_ROLE} и не выходи из этой роли'
+                                                          'К тебе обратился пользователь с таким сообщением.'
+                                                          ' В конце каждого'
+                                                          'сообщения ты подписываешься. Что ему ответить?'},
+                            {'role': 'user', 'content': message.text}
+                        ],
+                        max_tokens=500,
+                    )
+                    answer = response.choices[0].message.content
+                    await bot.send_message(message.chat.id, answer, reply_markup=back)
+                    await message.delete()
+                else:
+                    await bot.send_message(message.chat.id, text="Вы исчерпали свой месячный лимит по данной подписке",
+                                           reply_markup=buy_subscribe)
             else:
-                await bot.send_message(message.chat.id, text="Вы исчерпали свой месячный лимит по данной подписке", reply_markup=buy_subscribe)
+                await bot.send_message(message.chat.id,
+                                       f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
         else:
-            await bot.send_message(message.chat.id,
-                                   f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
+            await bot.send_message(message.chat.id, text='Сначала выберите роль', reply_markup=roles_kb)
     else:
-        await bot.send_message(message.chat.id, text='Сначала выберите роль', reply_markup=roles_kb)
+        print('no')
+        await bot.send_message(message.chat.id, text="Ваша предыдущая подписка закончилась\n"
+                                                     "для продолжения оплатите подписку за данный месяц",
+                               reply_markup=sub)
 
 
 executor.start_polling(dp, skip_updates=False)
