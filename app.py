@@ -9,7 +9,7 @@ from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe, admin_kb
 from aiogram.types.message import ContentType
 from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month, \
     check_is_admin, list_of_users
-from sub_chanel import check_sub_chanel
+from sub_chanel import check_sub_chanel, hello
 
 load_dotenv()
 
@@ -17,6 +17,7 @@ token = os.getenv("BOT_TOKEN")
 bot = Bot(token=token)
 openai.api_key = os.getenv("API_KEY")
 PAYMENT_TOKEN = os.getenv("PAYMENT_TOKEN")
+PASSWORD = os.getenv("PASSWORD")
 dp = Dispatcher(bot)
 CHANNEL_ID = '@my_test_bot18'
 PHOTOS = []
@@ -30,8 +31,7 @@ async def welcome(message: types.Message):
     name = message.chat.username
     uid = message.from_user.id
     add_user(uid)
-    response = f'Привет {name}, меня зовут MozgBot. Готов ответить на любой твой вопрос в одной из 4 ролей.' \
-               f' Для начала выбери от чьего лица хочешь получить ответ.'
+    response = hello(name)
     await bot.send_message(message.chat.id, text=response, reply_markup=kb)
     await message.delete()
 
@@ -47,7 +47,9 @@ async def welcome(message: types.Message):
 
 @dp.callback_query_handler(text='Вернуться в меню')
 async def restart(call: types.CallbackQuery):
-    await call.message.answer(text="Главное меню", reply_markup=kb)
+    name = call.from_user.username
+    response = hello(name)
+    await call.message.answer(text=response, reply_markup=kb)
 
 
 @dp.callback_query_handler(text=['Подписка'])
@@ -77,7 +79,7 @@ async def photo(message: types.Message):
             PHOTOS.append(message.photo[0]['file_id'])
             await bot.send_message(message.chat.id, 'принято')
         else:
-            await bot.send_message(message.chat.id, 'Отправьте фото пжлста')
+            await bot.send_message(message.chat.id, 'Рассылка принимает только фото')
     else:
         await bot.send_message(message.chat.id, 'Бот не принимает стикеры, документы и фото')
 
@@ -121,7 +123,7 @@ async def get_all_messages(message: types.Message):
     user_id = message.from_user.id
     CUR_ROLE = get_role(user_id)
     text = message.text.split(':')
-    if text[0] != 'psw':
+    if text[0] != PASSWORD:
         if check_month(user_id):
             if CUR_ROLE:
                 if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
