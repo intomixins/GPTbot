@@ -126,7 +126,6 @@ async def get_all_messages(message: types.Message):
             if CUR_ROLE:
                 if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
                     if check_user(user_id):
-                        msg = await bot.send_message(message.chat.id, 'Обработка запроса')
                         response = openai.ChatCompletion.create(
                             model=MODEL,
                             temperature=0.5,
@@ -141,7 +140,6 @@ async def get_all_messages(message: types.Message):
                             max_tokens=500,
                         )
                         answer = response.choices[0].message.content
-                        await msg.delete()
                         await bot.send_message(message.chat.id, answer, reply_markup=back)
                         await message.delete()
                     else:
