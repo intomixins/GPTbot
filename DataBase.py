@@ -14,7 +14,7 @@ def new_message(user_id):
             else:
                 return 'limit'
         else:
-            if count <= 10:
+            if count < 10:
                 cur.execute(f"UPDATE users SET count = count + 1 WHERE user_id == {user_id}")
             else:
                 return 'limit'
@@ -35,15 +35,13 @@ def add_user(user_id):
 
 
 def check_user(user_id):
-    if not new_message(user_id):
-        return True
-    return False
+    return not new_message(user_id)
 
 
 def add_pay_user(user_id):
     with sqlite3.connect('bot.db') as conn:
         cur = conn.cursor()
-        cur.execute(f"UPDATE users SET count = 0, is_member = 1, date = '{date.today()}'")
+        cur.execute(f"UPDATE users SET count = 0, is_member = 1, date = '{date.today()}' WHERE user_id = {user_id}")
 
 
 def get_description(role_name):
@@ -85,8 +83,18 @@ def get_role(user_id):
 def check_month(user_id):
     with sqlite3.connect('bot.db') as conn:
         cur = conn.cursor()
-        year, month, day = cur.execute(f"SELECT date FROM users WHERE user_id = {user_id}").fetchone()[0].split('-')
-        if date.today().year == int(year) and date.today().month == int(f"{(int(month) + 1):02}") \
-                and date.today().day == int(day):
-            return False
+        res = cur.execute(f"SELECT date FROM users WHERE user_id = {user_id}").fetchone()[0]
+        if res:
+            year, month, day = res[0], res[1], res[2]
+            if date.today().year == int(year) and date.today().month == int(f"{(int(month) + 1):02}") \
+                    and date.today().day == int(day):
+                return False
     return True
+
+
+def check_is_admin(user_id):
+    with sqlite3.connect('bot.db') as conn:
+        cur = conn.cursor()
+        res = cur.execute(f"SELECT is_admin FROM users WHERE user_id = {user_id}").fetchone()[0] == 1
+        return res
+

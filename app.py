@@ -3,9 +3,10 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 import openai
-from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe
+from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe, admin_kb
 from aiogram.types.message import ContentType
-from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month
+from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month, \
+    check_is_admin, list_of_users
 from sub_chanel import check_sub_chanel
 
 load_dotenv()
@@ -16,9 +17,9 @@ openai.api_key = os.getenv("API_KEY")
 PAYMENT_TOKEN = os.getenv("PAYMENT_TOKEN")
 dp = Dispatcher(bot)
 CHANNEL_ID = '@my_test_bot18'
+PHOTOS = []
 
 MODEL = 'gpt-3.5-turbo'
-CUR_ROLE = ''
 PRICE = types.LabeledPrice(label='Подписка на 1 месяц', amount=1000 * 100)
 
 
@@ -31,6 +32,15 @@ async def welcome(message: types.Message):
                f' Для начала выбери от чьего лица хочешь получить ответ.'
     await bot.send_message(message.chat.id, text=response, reply_markup=kb)
     await message.delete()
+
+
+# @dp.message_handler(commands=['admin'])
+# async def admin(message: types.Message):
+#     uid = message.from_user.id
+#     if check_is_admin(uid):
+#         await bot.send_message(message.chat.id, 'Введите пароль и сообщение для рассылки')
+#     else:
+#         await bot.send_message(message.chat.id, 'Вам отказано в доступе')
 
 
 @dp.callback_query_handler(text='Вернуться в меню')
@@ -49,11 +59,25 @@ async def roles(call: types.CallbackQuery):
     await call.message.answer(text='Выберите одну из ролей, в которой вам ответит бот', reply_markup=roles_kb)
 
 
-@dp.callback_query_handler(text=['Гопник', 'Жириновский', 'Гоблин Пучков', 'Илон Маск'])
+@dp.callback_query_handler(text=['Гопник', 'Жириновский', 'Дмитрий Пучков', 'Илон Маск'])
 async def all_roles(call: types.CallbackQuery):
     change_role(call.from_user.id, call.data)
     await call.message.answer(text=f'Роль успешно изменена на {call.data}. {get_description(call.data)}')
     await call.message.answer(text='Введите свой вопрос')
+
+
+@dp.message_handler(content_types=['document', 'sticker', 'photo'])
+async def photo(message: types.Message):
+    global PHOTOS
+    uid = message.from_user.id
+    if check_is_admin(uid):
+        if message.photo:
+            PHOTOS.append(message.photo[0]['file_id'])
+            await bot.send_message(message.chat.id, 'принято')
+        else:
+            await bot.send_message(message.chat.id, 'Отправьте фото пжлста')
+    else:
+        await bot.send_message(message.chat.id, 'Бот не принимает стикеры, документы и фото')
 
 
 @dp.callback_query_handler(text=['Купить'])
@@ -91,41 +115,51 @@ async def successful_payment(message: types.Message):
 
 @dp.message_handler()
 async def get_all_messages(message: types.Message):
+    global PHOTOS
     user_id = message.from_user.id
     CUR_ROLE = get_role(user_id)
-    if check_month(user_id):
-        print('yes')
-        if CUR_ROLE:
-            if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
-                if check_user(user_id):
-                    response = openai.ChatCompletion.create(
-                        model=MODEL,
-                        temperature=0.5,
-                        messages=[
-                            {'role': 'system', 'content': f'Отвечай как будто ты {CUR_ROLE} и не выходи из этой роли'
-                                                          'К тебе обратился пользователь с таким сообщением.'
-                                                          ' В конце каждого'
-                                                          'сообщения ты подписываешься. Что ему ответить?'},
-                            {'role': 'user', 'content': message.text}
-                        ],
-                        max_tokens=500,
-                    )
-                    answer = response.choices[0].message.content
-                    await bot.send_message(message.chat.id, answer, reply_markup=back)
-                    await message.delete()
+    text = message.text.split(':')
+    if text[0] != 'psw':
+        if check_month(user_id):
+            if CUR_ROLE:
+                if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
+                    if check_user(user_id):
+                        response = openai.ChatCompletion.create(
+                            model=MODEL,
+                            temperature=0.5,
+                            messages=[
+                                {'role': 'system',
+                                 'content': f'Отвечай как будто ты {CUR_ROLE} и не выходи из этой роли'
+                                            'К тебе обратился пользователь с таким сообщением.'
+                                            ' В конце каждого'
+                                            'сообщения ты подписываешься. Что ему ответить?'},
+                                {'role': 'user', 'content': message.text}
+                            ],
+                            max_tokens=500,
+                        )
+                        answer = response.choices[0].message.content
+                        await bot.send_message(message.chat.id, answer, reply_markup=back)
+                        await message.delete()
+                    else:
+                        await bot.send_message(message.chat.id,
+                                               text="Вы исчерпали свой месячный лимит по данной подписке",
+                                               reply_markup=buy_subscribe)
                 else:
-                    await bot.send_message(message.chat.id, text="Вы исчерпали свой месячный лимит по данной подписке",
-                                           reply_markup=buy_subscribe)
+                    await bot.send_message(message.chat.id,
+                                           f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
             else:
-                await bot.send_message(message.chat.id,
-                                       f'Для того чтобы обращаться к боту подпишитесь на канал {CHANNEL_ID}')
+                await bot.send_message(message.chat.id, text='Сначала выберите роль', reply_markup=roles_kb)
         else:
-            await bot.send_message(message.chat.id, text='Сначала выберите роль', reply_markup=roles_kb)
+            await bot.send_message(message.chat.id, text="Ваша предыдущая подписка закончилась\n"
+                                                         "для продолжения оплатите подписку за данный месяц",
+                                   reply_markup=sub)
     else:
-        print('no')
-        await bot.send_message(message.chat.id, text="Ваша предыдущая подписка закончилась\n"
-                                                     "для продолжения оплатите подписку за данный месяц",
-                               reply_markup=sub)
+        for i in list_of_users():
+            if PHOTOS:
+                for j in PHOTOS:
+                    await bot.send_photo(i, j)
+            await bot.send_message(i, text[1])
+        PHOTOS = []
 
 
 executor.start_polling(dp, skip_updates=False)
