@@ -1,4 +1,4 @@
 .env
 users.sqbpro
-.idea
-__pycache__
+/.idea
+/__pycache__
