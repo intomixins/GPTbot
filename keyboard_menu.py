@@ -15,7 +15,7 @@ roles_kb = InlineKeyboardMarkup()
 r1 = InlineKeyboardButton(text='Гопник', callback_data="Гопник")
 r2 = InlineKeyboardButton(text='Жириновский', callback_data='Жириновский')
 r3 = InlineKeyboardButton(text='Дмитрий Пучков', callback_data='Дмитрий Пучков')
-r4 = InlineKeyboardButton(text='Илон Маск', callback_data='Илон Маск')
+r4 = InlineKeyboardButton(text='ChatGPT', callback_data='ChatGPT')
 roles_kb.add(r1, r2)
 roles_kb.row(r3, r4)
 

@@ -1,11 +1,9 @@
-import asyncio
-
 from dotenv import load_dotenv
 import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 import openai
-from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe, admin_kb
+from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe
 from aiogram.types.message import ContentType
 from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month, \
     check_is_admin, list_of_users
@@ -36,15 +34,6 @@ async def welcome(message: types.Message):
     await message.delete()
 
 
-# @dp.message_handler(commands=['admin'])
-# async def admin(message: types.Message):
-#     uid = message.from_user.id
-#     if check_is_admin(uid):
-#         await bot.send_message(message.chat.id, 'Введите пароль и сообщение для рассылки')
-#     else:
-#         await bot.send_message(message.chat.id, 'Вам отказано в доступе')
-
-
 @dp.callback_query_handler(text='Вернуться в меню')
 async def restart(call: types.CallbackQuery):
     name = call.from_user.username
@@ -63,7 +52,7 @@ async def roles(call: types.CallbackQuery):
     await call.message.answer(text='Выберите одну из ролей, в которой вам ответит бот', reply_markup=roles_kb)
 
 
-@dp.callback_query_handler(text=['Гопник', 'Жириновский', 'Дмитрий Пучков', 'Илон Маск'])
+@dp.callback_query_handler(text=['Гопник', 'Жириновский', 'Дмитрий Пучков', 'ChatGPT'])
 async def all_roles(call: types.CallbackQuery):
     change_role(call.from_user.id, call.data)
     await call.message.answer(text=f'Роль успешно изменена на {call.data}. {get_description(call.data)}')
