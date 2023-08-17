@@ -3,7 +3,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 import openai
-from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe
+from keyboard_menu import roles_kb, kb, sub, back, buy_subscribe, menu
 from aiogram.types.message import ContentType
 from DataBase import check_user, add_pay_user, get_description, change_role, get_role, add_user, check_month, \
     check_is_admin, list_of_users
@@ -17,14 +17,14 @@ openai.api_key = os.getenv("API_KEY")
 PAYMENT_TOKEN = os.getenv("PAYMENT_TOKEN")
 PASSWORD = os.getenv("PASSWORD")
 dp = Dispatcher(bot)
-CHANNEL_ID = '@my_test_bot18'
+CHANNEL_ID = '@mozg_gpt'
 PHOTOS = []
 
 MODEL = 'gpt-3.5-turbo'
 PRICE = types.LabeledPrice(label='Подписка на 1 месяц', amount=1000 * 100)
 
 
-@dp.message_handler(commands=['start'])
+@dp.message_handler(commands=['start', 'Меню'])
 async def welcome(message: types.Message):
     name = message.chat.username
     uid = message.from_user.id
@@ -34,11 +34,11 @@ async def welcome(message: types.Message):
     await message.delete()
 
 
-@dp.callback_query_handler(text='Вернуться в меню')
-async def restart(call: types.CallbackQuery):
-    name = call.from_user.username
-    response = hello(name)
-    await call.message.answer(text=response, reply_markup=kb)
+# @dp.callback_query_handler(text='Вернуться в меню')
+# async def restart(call: types.CallbackQuery):
+#     name = call.from_user.username
+#     response = hello(name)
+#     await call.message.answer(text=response, reply_markup=kb)
 
 
 @dp.callback_query_handler(text=['Подписка'])
@@ -75,8 +75,6 @@ async def photo(message: types.Message):
 
 @dp.callback_query_handler(text=['Купить'])
 async def buy_sub(call: types.CallbackQuery):
-    if PAYMENT_TOKEN.split(":")[1] == 'TEST':
-        await call.message.answer(text="Тестовый платеж")
     await bot.send_invoice(call.message.chat.id,
                            title='Подписка на бота',
                            description='Активация на один месяц',
@@ -115,7 +113,7 @@ async def get_all_messages(message: types.Message):
     if text[0] != PASSWORD:
         if check_month(user_id):
             if CUR_ROLE:
-                if check_sub_chanel(await bot.get_chat_member(chat_id=-1001928881431, user_id=user_id)):
+                if check_sub_chanel(await bot.get_chat_member(chat_id=-1001460677180, user_id=user_id)):
                     if check_user(user_id):
                         msg = await bot.send_message(message.chat.id, 'Обработка запроса')
                         response = openai.ChatCompletion.create(
@@ -133,7 +131,7 @@ async def get_all_messages(message: types.Message):
                         )
                         answer = response.choices[0].message.content
                         await msg.delete()
-                        await bot.send_message(message.chat.id, answer, reply_markup=back)
+                        await bot.send_message(message.chat.id, answer, reply_markup=menu)
                         await message.delete()
                     else:
                         await bot.send_message(message.chat.id,

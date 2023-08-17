@@ -5,6 +5,10 @@ kb1 = InlineKeyboardButton(text='Подписка', callback_data='Подпис�
 kb2 = InlineKeyboardButton(text='Роли', callback_data='Роли')
 kb.row(kb1, kb2)
 
+menu = ReplyKeyboardMarkup()
+m1 = KeyboardButton(text='/Меню')
+menu.add(m1)
+
 
 sub = InlineKeyboardMarkup()
 sub1 = InlineKeyboardButton(text='Купить подписку', callback_data='Купить')
